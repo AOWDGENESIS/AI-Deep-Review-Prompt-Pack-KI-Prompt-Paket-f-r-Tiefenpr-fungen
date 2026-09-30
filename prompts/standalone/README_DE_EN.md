@@ -1,6 +1,6 @@
 # Standalone Prompts / Eigenständige Prompts
 
-**Version:** 1.2.1  
+**Version:** 1.2.2
 **Purpose / Zweck:** Every file in this directory is self-contained. It includes a universal deep-review core, one specialized profile, bilingual instructions, and profile references.
 
 ## Use / Verwendung

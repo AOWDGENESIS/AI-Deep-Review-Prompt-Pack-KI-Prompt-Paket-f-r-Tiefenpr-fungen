@@ -1,9 +1,9 @@
 # Standalone Deep-Review Prompt: Swift / Objective-C / Swift / Objective-C
 
-**Version:** 1.2.1  
-**Profile ID:** `swift-objective-c`  
-**Scope:** This self-contained file includes the universal review core and the selected specialized profile.  
-**Use:** Give this file directly to an AI agent together with the target code and completed context fields.  
+**Version:** 1.2.2
+**Profile ID:** `swift-objective-c`
+**Scope:** This self-contained file includes the universal review core and the selected specialized profile.
+**Use:** Give this file directly to an AI agent together with the target code and completed context fields.
 **Integrated dependency profiles / Integrierte Abhängigkeiten:** none / keine
 
 > **Language selection / Sprachauswahl:** For a German review, use the German prompt block. For an English review, use the English prompt block. An agent may receive the complete file, but must follow only the requested language block.

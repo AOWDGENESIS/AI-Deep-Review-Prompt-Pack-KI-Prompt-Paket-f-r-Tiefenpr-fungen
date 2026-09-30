@@ -1,6 +1,6 @@
 # KI-Master-Prompt: Tiefenprüfung von Code, Skripten und Konfiguration
 
-**Version:** 1.2.1  
+**Version:** 1.2.2
 **Stand:** 2026-09-30
 
 ```text

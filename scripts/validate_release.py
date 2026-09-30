@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Dependency-free integrity validation for the isolated v1.2.1 release."""
+"""Dependency-free integrity validation for the isolated v1.2.2 release."""
 from __future__ import annotations
 
 import hashlib
@@ -9,22 +9,21 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-EXPECTED_VERSION = "1.2.1"
-EXPECTED_ROOT = "ai-deep-review-prompt-pack-v1.2.1"
+EXPECTED_VERSION = "1.2.2"
 REQUIRED = {
     "README.md", "DEEP_REVIEW_PROMPT_DE.md", "DEEP_REVIEW_PROMPT_EN.md",
     "COMPLETENESS_AUDIT_DE_EN.md", "VERSION", "LICENSE", "NOTICE.md", "CHANGELOG.md",
-    "SECURITY.md", "CONTRIBUTING.md", "CODE_OF_CONDUCT.md", "RELEASE_NOTES_v1.2.1.md",
+    "SECURITY.md", "CONTRIBUTING.md", "CODE_OF_CONDUCT.md", "RELEASE_NOTES_v1.2.2.md",
     "RELEASE_CHECKLIST.md", "RELEASE_MANIFEST.sha256", ".gitignore", ".gitattributes",
-    "docs/RELEASE_ISOLATION.md", "docs/QUALITY_ASSURANCE_v1.2.1_DE_EN.md",
+    "docs/RELEASE_ISOLATION.md", "docs/QUALITY_ASSURANCE_v1.2.2_DE_EN.md", "docs/GITHUB_REMOTE_AUDIT_v1.2.2_DE_EN.md",
     "scripts/validate_release.py", ".github/PULL_REQUEST_TEMPLATE.md", ".github/CODEOWNERS.example",
     ".github/ISSUE_TEMPLATE/bug_report.yml", ".github/ISSUE_TEMPLATE/feature_request.yml",
     "prompts/standalone/README_DE_EN.md", "prompts/standalone/PROFILE_MANIFEST.json",
     "github-setup/README_DE_EN.md", "github-setup/01_CREATE_REPOSITORY_DE_EN.md",
     "github-setup/02_UPLOAD_CONTENT_DE_EN.md", "github-setup/03_SECURITY_AND_BRANCH_SETTINGS_DE_EN.md",
-    "github-setup/04_PUBLISH_RELEASE_DE_EN.md", "github-setup/05_OPTIONAL_CODEOWNERS_DE_EN.md",
+    "github-setup/04_PUBLISH_RELEASE_DE_EN.md", "github-setup/05_OPTIONAL_CODEOWNERS_DE_EN.md", "github-setup/06_APPLY_REMOTE_FIX_v1.2.2_DE_EN.md",
 }
-FORBIDDEN_DIRS = {".git", "node_modules", ".venv", "venv", "dist", "build", "__pycache__"}
+FORBIDDEN_DIRS = {"node_modules", ".venv", "venv", "dist", "build", "__pycache__"}
 PROFILE_RE = re.compile(r"^## PROFILE: (.*?)\n\n```text\n(.*?)\n```", re.MULTILINE | re.DOTALL)
 
 
@@ -38,8 +37,9 @@ def parse_profiles(path: Path) -> list[tuple[str, str]]:
 
 
 def main() -> None:
-    if ROOT.name != EXPECTED_ROOT:
-        fail(f"unexpected isolated root: {ROOT.name}")
+    # The validator must work both in the isolated release directory and in a Git checkout.
+    # ZIP isolation (one expected top-level directory and no .git) is checked by the packaging procedure.
+    checkout_mode = (ROOT / ".git").exists()
     if (ROOT / "VERSION").read_text(encoding="utf-8").strip() != EXPECTED_VERSION:
         fail("VERSION does not match expected version")
     missing = sorted(item for item in REQUIRED if not (ROOT / item).is_file())
@@ -49,10 +49,13 @@ def main() -> None:
     if forbidden:
         fail(f"forbidden directories included: {', '.join(forbidden)}")
 
-    # Structural Markdown checks: every document must have balanced fenced blocks.
+    # Structural Markdown checks: every document must have balanced fenced blocks and no accidental trailing whitespace.
     for md in ROOT.rglob("*.md"):
-        if md.read_text(encoding="utf-8").count("```") % 2:
+        markdown = md.read_text(encoding="utf-8")
+        if markdown.count("```") % 2:
             fail(f"unbalanced Markdown code fence: {md.relative_to(ROOT)}")
+        if any(line != line.rstrip() for line in markdown.splitlines()):
+            fail(f"trailing whitespace in Markdown: {md.relative_to(ROOT)}")
 
     de_profiles = parse_profiles(ROOT / "DEEP_REVIEW_PROMPT_DE.md")
     en_profiles = parse_profiles(ROOT / "DEEP_REVIEW_PROMPT_EN.md")
@@ -110,7 +113,8 @@ def main() -> None:
         actual = hashlib.sha256(target.read_bytes()).hexdigest()
         if actual != expected:
             fail(f"manifest checksum mismatch: {rel}")
-    print("PASS: isolated release 1.2.1; master profiles=41/41; standalone prompts=41; manifest, parity, forms, and fences verified")
+    mode = "Git checkout" if checkout_mode else "release directory"
+    print(f"PASS: {mode} 1.2.2; master profiles=41/41; standalone prompts=41; manifest, parity, forms, and fences verified")
 
 
 if __name__ == "__main__":

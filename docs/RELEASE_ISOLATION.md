@@ -12,7 +12,7 @@ Empfohlene Veröffentlichung:
 1. Aus dem geprüften Staging-Ordner die Validierung ausführen.
 2. SHA-256-Manifest neu erzeugen.
 3. ZIP neu erzeugen und dessen Hash separat veröffentlichen.
-4. GitHub Release als `v1.2.1` anlegen und nur die drei Artefakte hochladen: ZIP, ZIP-Hash, Release Notes.
+4. GitHub Release als `v1.2.2` anlegen und nur die drei Artefakte hochladen: ZIP, ZIP-Hash, Release Notes.
 
 ## English
 
@@ -25,4 +25,4 @@ Recommended publication:
 1. Run validation from the reviewed staging directory.
 2. Regenerate the SHA-256 manifest.
 3. Rebuild the ZIP and publish its hash separately.
-4. Create GitHub Release `v1.2.1` and upload only three artifacts: ZIP, ZIP hash, and release notes.
+4. Create GitHub Release `v1.2.2` and upload only three artifacts: ZIP, ZIP hash, and release notes.

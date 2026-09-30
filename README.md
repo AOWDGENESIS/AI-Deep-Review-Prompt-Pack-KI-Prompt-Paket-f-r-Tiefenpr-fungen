@@ -1,7 +1,7 @@
 # AI Deep-Review Prompt Pack / KI-Prompt-Paket für Tiefenprüfungen
 
-**Version:** 1.2.1  
-**Stand:** 2026-09-30  
+**Version:** 1.2.2
+**Stand:** 2026-09-30
 **Zweck / Purpose:** Zweisprachige, agentenlesbare Prompts für eine belegbasierte Tiefenprüfung von Quellcode, Skripten, Konfigurationen und Infrastructure as Code.
 
 ## Inhalt / Contents

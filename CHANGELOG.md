@@ -2,6 +2,18 @@
 
 This project follows [Semantic Versioning](https://semver.org/).
 
+## [1.2.2] - 2026-09-30
+
+### Fixed
+
+- Restored hidden repository files `.github/`, `.gitignore`, and `.gitattributes` that were absent from the remote GitHub checkout.
+- Made `scripts/validate_release.py` work in both an isolated release directory and a normal Git checkout.
+- Clarified GitHub upload instructions to preserve dotfiles and `.github` content.
+
+### Verified
+
+- Fresh-clone validation, release-manifest integrity, master/standalone profile parity, and ZIP isolation.
+
 ## [1.2.1] - 2026-09-30
 
 ### Fixed

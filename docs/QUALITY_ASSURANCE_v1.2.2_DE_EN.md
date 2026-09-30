@@ -1,4 +1,4 @@
-# Deep Quality Assurance — v1.2.1 / Tiefgehende Qualitätssicherung — v1.2.1
+# Deep Quality Assurance — v1.2.2 / Tiefgehende Qualitätssicherung — v1.2.2
 
 ## Deutsch
 
@@ -21,6 +21,7 @@
 | QA-003 | GitHub Issue Forms hatten keine eindeutigen `id`-Felder. | Alle nicht-Markdown-Felder enthalten nun gültige IDs. |
 | QA-004 | Der Validator prüfte primär Anzahl, nicht die Zuordnung der Standalone-Profile. | Validator prüft nun Profile, Manifest, Sprachblöcke, Code-Fences und eingebettete Spezialprofile. |
 | QA-005 | CODEOWNERS war in den GitHub-Anweisungen erwähnt, aber ohne sichere Vorlage. | Inaktive Beispieldatei und Anleitung zur sicheren Aktivierung ergänzt. |
+| QA-006 | Im Remote-GitHub-Checkout fehlten versteckte Dateien `.github/`, `.gitignore` und `.gitattributes`; Manifest-Prüfung und Issue Forms waren dadurch unvollständig. | Versteckte Dateien wiederhergestellt, Checkout-Validierung unterstützt und Git-Upload-Anforderungen präzisiert. |
 
 ### Verifikation
 
@@ -29,6 +30,7 @@
 - Jede Standalone-Datei enthält deutschen und englischen Prompt-Block.
 - ZIP enthält genau einen Top-Level-Ordner und keine `.git`-, Cache-, Build- oder Secret-Artefakte.
 - Das interne SHA-256-Manifest und der Extraktionstest müssen vor Veröffentlichung erfolgreich laufen.
+- Zusätzlich muss die Validierung in einem frischen Git-Clone erfolgreich sein.
 
 ## English
 
@@ -51,6 +53,7 @@
 | QA-003 | GitHub Issue Forms had no unique `id` fields. | Every non-markdown field now has a valid ID. |
 | QA-004 | The validator mostly checked counts, not standalone-profile mappings. | It now checks profiles, manifest, language blocks, code fences, and embedded specialized profiles. |
 | QA-005 | CODEOWNERS was mentioned in setup instructions without a safe template. | Added an inactive example and safe activation instructions. |
+| QA-006 | Remote GitHub checkout lacked hidden `.github/`, `.gitignore`, and `.gitattributes` files; manifest verification and Issue Forms were therefore incomplete. | Restored hidden files, made checkout validation supported, and clarified Git upload requirements. |
 
 ### Verification
 
@@ -59,3 +62,4 @@
 - Every standalone file contains German and English prompt blocks.
 - ZIP contains exactly one top-level directory and no `.git`, cache, build, or secret artifacts.
 - Internal SHA-256 manifest and extraction test must pass before publication.
+- Validation must also pass in a fresh Git clone.

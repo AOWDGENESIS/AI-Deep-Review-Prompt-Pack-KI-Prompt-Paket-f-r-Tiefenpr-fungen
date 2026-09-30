@@ -1,9 +1,9 @@
 # Standalone Deep-Review Prompt: HTML / CSS / Browser-Webartefakte / HTML / CSS / Browser Web Artifacts
 
-**Version:** 1.2.1  
-**Profile ID:** `web-ui-html-css-browser`  
-**Scope:** This self-contained file includes the universal review core and the selected specialized profile.  
-**Use:** Give this file directly to an AI agent together with the target code and completed context fields.  
+**Version:** 1.2.2
+**Profile ID:** `web-ui-html-css-browser`
+**Scope:** This self-contained file includes the universal review core and the selected specialized profile.
+**Use:** Give this file directly to an AI agent together with the target code and completed context fields.
 **Integrated dependency profiles / Integrierte Abhängigkeiten:** none / keine
 
 > **Language selection / Sprachauswahl:** For a German review, use the German prompt block. For an English review, use the English prompt block. An agent may receive the complete file, but must follow only the requested language block.

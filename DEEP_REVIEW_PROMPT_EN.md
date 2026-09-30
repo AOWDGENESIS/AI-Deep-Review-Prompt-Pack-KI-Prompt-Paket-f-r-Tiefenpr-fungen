@@ -1,6 +1,6 @@
 # AI Master Prompt: Deep Review of Code, Scripts, and Configuration
 
-**Version:** 1.2.1  
+**Version:** 1.2.2
 **Date:** 2026-09-30
 
 ```text

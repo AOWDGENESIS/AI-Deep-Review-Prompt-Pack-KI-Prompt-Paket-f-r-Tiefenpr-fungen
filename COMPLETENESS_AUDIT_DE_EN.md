@@ -1,7 +1,7 @@
 # Vollständigkeitsprüfung und Ergänzungen / Completeness Audit and Improvements
 
-**Version:** 1.1.0  
-**Datum / Date:** 2026-09-30  
+**Version:** 1.1.0
+**Datum / Date:** 2026-09-30
 **Prüfobjekt / Review target:** Prompt-Paket Version 1.0
 
 ---
