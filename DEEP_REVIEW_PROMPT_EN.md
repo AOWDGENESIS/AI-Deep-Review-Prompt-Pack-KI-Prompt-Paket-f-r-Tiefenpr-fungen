@@ -573,7 +573,7 @@ ANSIBLE ADDITIONAL REVIEW
 - Check shell/command/argv, Jinja injection, become, remote_user, file permissions, secrets/Vault, and inventory sources.
 - Check collection/role source and versions, safe host limiting, serialization, and dangerous delegation.
 REFERENCES: Ansible Best Practices https://docs.ansible.com/projects/ansible/latest/tips_tricks/ansible_tips_tricks.html ;
-Ansible Vault https://docs.ansible.com/ansible/latest/vault_guide/ ; OWASP https://cheatsheetseries.owasp.org/
+Ansible Vault https://docs.ansible.com/projects/ansible/latest/vault_guide/index.html ; OWASP https://cheatsheetseries.owasp.org/
 ```
 
 ## PROFILE: Other Language / Discovery
