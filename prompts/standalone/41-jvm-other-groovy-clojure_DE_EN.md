@@ -82,7 +82,7 @@ ZUSATZPRÜFUNG JVM_OTHER
 - Groovy: prüfe GString-Interpolation, dynamische Methoden/Properties, evaluate und Jenkins-Pipeline-Sandboxing.
 - Clojure: prüfe read/eval, EDN-/Datenreader, dynamische Vars, Nebenläufigkeit/Atoms/Refs und Java-Interop.
 - Prüfe Build-Tools und Skripte auf Ausführung untrusted Inputs im privilegierten CI-Kontext.
-REFERENZEN: Groovy Security https://docs.groovy-lang.org/docs/next/html/documentation/#_security ; Clojure Reader https://clojure.org/reference/reader ;
+REFERENZEN: Groovy Security https://docs.groovy-lang.org/docs/latest/html/documentation/#_security ; Clojure Reader https://clojure.org/reference/reader ;
 Oracle Java Secure Coding https://www.oracle.com/java/technologies/javase/seccodeguide.html
 ```
 
@@ -173,7 +173,7 @@ JVM_OTHER ADDITIONAL REVIEW
 - Groovy: check GString interpolation, dynamic methods/properties, evaluate, and Jenkins pipeline sandboxing.
 - Clojure: check read/eval, EDN/data readers, dynamic Vars, concurrency via atoms/refs, and Java interop.
 - Check build tools and scripts for execution of untrusted inputs in privileged CI contexts.
-REFERENCES: Groovy Security https://docs.groovy-lang.org/docs/next/html/documentation/#_security ; Clojure Reader https://clojure.org/reference/reader ;
+REFERENCES: Groovy Security https://docs.groovy-lang.org/docs/latest/html/documentation/#_security ; Clojure Reader https://clojure.org/reference/reader ;
 Oracle Java Secure Coding https://www.oracle.com/java/technologies/javase/seccodeguide.html
 ```
 
