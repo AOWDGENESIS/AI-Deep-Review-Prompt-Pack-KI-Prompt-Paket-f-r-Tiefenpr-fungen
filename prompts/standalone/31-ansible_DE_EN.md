@@ -81,8 +81,8 @@ ZUSATZPRÜFUNG ANSIBLE
 - Prüfe Idempotenz, changed_when/failed_when, Handler, Check Mode, Rollback und sichere Fehlerpfade.
 - Prüfe shell/command/argv, Jinja-Injection, become, remote_user, Dateirechte, Secrets/Vault und Inventory-Quellen.
 - Prüfe Collections-/Rollenherkunft und -Versionen, faktische Hostbegrenzung, Serialisierung und gefährliche Delegation.
-REFERENZEN: Ansible Best Practices https://docs.ansible.com/ansible/latest/tips_tricks/ansible_tips_tricks.html ;
-Ansible Security https://docs.ansible.com/ansible/latest/vault_guide/ ; OWASP https://cheatsheetseries.owasp.org/
+REFERENZEN: Ansible Best Practices https://docs.ansible.com/projects/ansible/latest/tips_tricks/ansible_tips_tricks.html ;
+Ansible Security https://docs.ansible.com/projects/ansible/latest/vault_guide/index.html ; OWASP https://cheatsheetseries.owasp.org/
 ```
 
 
@@ -159,7 +159,7 @@ ANSIBLE ADDITIONAL REVIEW
 - Check idempotency, changed_when/failed_when, handlers, check mode, rollback, and secure error paths.
 - Check shell/command/argv, Jinja injection, become, remote_user, file permissions, secrets/Vault, and inventory sources.
 - Check collection/role source and versions, safe host limiting, serialization, and dangerous delegation.
-REFERENCES: Ansible Best Practices https://docs.ansible.com/ansible/latest/tips_tricks/ansible_tips_tricks.html ;
-Ansible Vault https://docs.ansible.com/ansible/latest/vault_guide/ ; OWASP https://cheatsheetseries.owasp.org/
+REFERENCES: Ansible Best Practices https://docs.ansible.com/projects/ansible/latest/tips_tricks/ansible_tips_tricks.html ;
+Ansible Vault https://docs.ansible.com/projects/ansible/latest/vault_guide/index.html ; OWASP https://cheatsheetseries.owasp.org/
 ```
 

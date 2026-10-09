@@ -1,0 +1,137 @@
+"""Regression tests for release-manifest validation."""
+from __future__ import annotations
+
+import hashlib
+import json
+import re
+import shutil
+import subprocess
+import sys
+import tempfile
+import unittest
+from pathlib import Path
+
+SOURCE_ROOT = Path(__file__).resolve().parents[1]
+VALIDATOR = Path("scripts/validate_release.py")
+MANIFEST = Path("RELEASE_MANIFEST.sha256")
+PROFILE_MANIFEST = Path("prompts/standalone/PROFILE_MANIFEST.json")
+
+
+class ReleaseValidatorRegressionTests(unittest.TestCase):
+    def setUp(self) -> None:
+        self.temp = tempfile.TemporaryDirectory(prefix="release-validator-test-")
+        self.root = Path(self.temp.name) / "package"
+        shutil.copytree(
+            SOURCE_ROOT,
+            self.root,
+            ignore=shutil.ignore_patterns(".git", "__pycache__", ".pytest_cache"),
+        )
+
+    def tearDown(self) -> None:
+        self.temp.cleanup()
+
+    def run_validator(self) -> subprocess.CompletedProcess[str]:
+        return subprocess.run(
+            [sys.executable, str(self.root / VALIDATOR)],
+            cwd=self.root,
+            text=True,
+            capture_output=True,
+            check=False,
+            timeout=30,
+        )
+
+    def test_clean_package_passes(self) -> None:
+        result = self.run_validator()
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertIn("SHA-256 coverage=", result.stdout)
+
+
+    def test_manifest_checksum_for_test_file_matches(self) -> None:
+        manifest = (self.root / MANIFEST).read_text(encoding="utf-8").splitlines()
+        entry = next(line for line in manifest if line.endswith("  tests/test_release_validator.py"))
+        expected = entry.split("  ", 1)[0]
+        actual = hashlib.sha256((self.root / "tests/test_release_validator.py").read_bytes()).hexdigest()
+        self.assertEqual(expected, actual, f"Manifest hash mismatch; actual SHA-256 is {actual}")
+
+    def test_missing_manifest_entry_fails(self) -> None:
+        path = self.root / MANIFEST
+        lines = path.read_text(encoding="utf-8").splitlines()
+        path.write_text("\n".join(lines[:-1]) + "\n", encoding="utf-8")
+        result = self.run_validator()
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("package files missing from SHA-256 manifest", result.stdout)
+
+    def test_duplicate_manifest_entry_fails(self) -> None:
+        path = self.root / MANIFEST
+        lines = path.read_text(encoding="utf-8").splitlines()
+        path.write_text("\n".join(lines + [lines[0]]) + "\n", encoding="utf-8")
+        result = self.run_validator()
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("duplicate manifest path", result.stdout)
+
+    def test_malformed_manifest_line_fails(self) -> None:
+        path = self.root / MANIFEST
+        path.write_text(path.read_text(encoding="utf-8") + "not-a-valid-entry\n", encoding="utf-8")
+        result = self.run_validator()
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("invalid SHA-256 manifest syntax", result.stdout)
+
+    def test_unsafe_manifest_path_fails(self) -> None:
+        path = self.root / MANIFEST
+        lines = path.read_text(encoding="utf-8").splitlines()
+        lines[0] = lines[0].split("  ", 1)[0] + "  ../outside.txt"
+        path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+        result = self.run_validator()
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("unsafe manifest path", result.stdout)
+
+    def test_modified_file_fails_checksum(self) -> None:
+        target = self.root / "README.md"
+        target.write_text(target.read_text(encoding="utf-8") + "\nTampered.\n", encoding="utf-8")
+        result = self.run_validator()
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("manifest checksum mismatch: README.md", result.stdout)
+
+    def test_unmanifested_file_fails(self) -> None:
+        (self.root / "unexpected.txt").write_text("unexpected payload\n", encoding="utf-8")
+        result = self.run_validator()
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("package files missing from SHA-256 manifest: unexpected.txt", result.stdout)
+
+
+    def test_profile_manifest_matches_standalone_files(self) -> None:
+        data = json.loads((self.root / PROFILE_MANIFEST).read_text(encoding="utf-8"))
+        profiles = data["profiles"]
+        self.assertEqual(data["profile_count"], 41)
+        self.assertEqual(len(profiles), data["profile_count"])
+        self.assertEqual(len({profile["id"] for profile in profiles}), len(profiles))
+        self.assertEqual([p["order"] for p in profiles], list(range(1, len(profiles) + 1)))
+        for profile in profiles:
+            target = self.root / "prompts" / "standalone" / profile["file"]
+            self.assertTrue(target.is_file(), f"Missing profile file: {profile['file']}")
+            text = target.read_text(encoding="utf-8")
+            self.assertIn("## Deutscher Standalone-Prompt", text, profile["file"])
+            self.assertIn("## English Standalone Prompt", text, profile["file"])
+
+    def test_standalone_profiles_have_balanced_code_fences(self) -> None:
+        data = json.loads((self.root / PROFILE_MANIFEST).read_text(encoding="utf-8"))
+        for profile in data["profiles"]:
+            target = self.root / "prompts" / "standalone" / profile["file"]
+            text = target.read_text(encoding="utf-8")
+            fences = [line for line in text.splitlines() if line.lstrip().startswith("```")]
+            self.assertEqual(len(fences) % 2, 0, f"Unbalanced code fences: {profile['file']}")
+
+    def test_standalone_reference_urls_are_https_and_not_placeholders(self) -> None:
+        data = json.loads((self.root / PROFILE_MANIFEST).read_text(encoding="utf-8"))
+        url_pattern = re.compile(r"https?://[^\\s)\\]>\\\"']+")
+        for profile in data["profiles"]:
+            target = self.root / "prompts" / "standalone" / profile["file"]
+            text = target.read_text(encoding="utf-8")
+            for url in url_pattern.findall(text):
+                url = url.rstrip(".,;:")
+                self.assertTrue(url.startswith("https://"), f"Non-HTTPS URL in {profile['file']}: {url}")
+                self.assertNotRegex(url, r"(?i)(example\\.com|localhost|127\\.0\\.0\\.1|TODO|CHANGEME)")
+
+
+if __name__ == "__main__":
+    unittest.main()

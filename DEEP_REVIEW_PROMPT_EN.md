@@ -572,8 +572,8 @@ ANSIBLE ADDITIONAL REVIEW
 - Check idempotency, changed_when/failed_when, handlers, check mode, rollback, and secure error paths.
 - Check shell/command/argv, Jinja injection, become, remote_user, file permissions, secrets/Vault, and inventory sources.
 - Check collection/role source and versions, safe host limiting, serialization, and dangerous delegation.
-REFERENCES: Ansible Best Practices https://docs.ansible.com/ansible/latest/tips_tricks/ansible_tips_tricks.html ;
-Ansible Vault https://docs.ansible.com/ansible/latest/vault_guide/ ; OWASP https://cheatsheetseries.owasp.org/
+REFERENCES: Ansible Best Practices https://docs.ansible.com/projects/ansible/latest/tips_tricks/ansible_tips_tricks.html ;
+Ansible Vault https://docs.ansible.com/projects/ansible/latest/vault_guide/index.html ; OWASP https://cheatsheetseries.owasp.org/
 ```
 
 ## PROFILE: Other Language / Discovery
@@ -708,7 +708,7 @@ JVM_OTHER ADDITIONAL REVIEW
 - Groovy: check GString interpolation, dynamic methods/properties, evaluate, and Jenkins pipeline sandboxing.
 - Clojure: check read/eval, EDN/data readers, dynamic Vars, concurrency via atoms/refs, and Java interop.
 - Check build tools and scripts for execution of untrusted inputs in privileged CI contexts.
-REFERENCES: Groovy Security https://docs.groovy-lang.org/docs/next/html/documentation/#_security ; Clojure Reader https://clojure.org/reference/reader ;
+REFERENCES: Groovy Security https://docs.groovy-lang.org/docs/latest/html/documentation/#_security ; Clojure Reader https://clojure.org/reference/reader ;
 Oracle Java Secure Coding https://www.oracle.com/java/technologies/javase/seccodeguide.html
 ```
 

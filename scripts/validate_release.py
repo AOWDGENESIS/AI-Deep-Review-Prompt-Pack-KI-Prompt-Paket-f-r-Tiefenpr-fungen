@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Dependency-free integrity validation for the isolated v1.2.2 release."""
+"""Dependency-free integrity validation for the current isolated release."""
 from __future__ import annotations
 
 import hashlib
@@ -9,11 +9,10 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-EXPECTED_VERSION = "1.2.2"
-REQUIRED = {
+REQUIRED_BASE = {
     "README.md", "DEEP_REVIEW_PROMPT_DE.md", "DEEP_REVIEW_PROMPT_EN.md",
     "COMPLETENESS_AUDIT_DE_EN.md", "VERSION", "LICENSE", "NOTICE.md", "CHANGELOG.md",
-    "SECURITY.md", "CONTRIBUTING.md", "CODE_OF_CONDUCT.md", "RELEASE_NOTES_v1.2.2.md",
+    "SECURITY.md", "CONTRIBUTING.md", "CODE_OF_CONDUCT.md",
     "RELEASE_CHECKLIST.md", "RELEASE_MANIFEST.sha256", ".gitignore", ".gitattributes",
     "docs/RELEASE_ISOLATION.md", "docs/QUALITY_ASSURANCE_v1.2.2_DE_EN.md", "docs/GITHUB_REMOTE_AUDIT_v1.2.2_DE_EN.md",
     "scripts/validate_release.py", ".github/PULL_REQUEST_TEMPLATE.md", ".github/CODEOWNERS.example",
@@ -40,9 +39,31 @@ def main() -> None:
     # The validator must work both in the isolated release directory and in a Git checkout.
     # ZIP isolation (one expected top-level directory and no .git) is checked by the packaging procedure.
     checkout_mode = (ROOT / ".git").exists()
-    if (ROOT / "VERSION").read_text(encoding="utf-8").strip() != EXPECTED_VERSION:
-        fail("VERSION does not match expected version")
-    missing = sorted(item for item in REQUIRED if not (ROOT / item).is_file())
+    version_file = (ROOT / "VERSION").read_text(encoding="utf-8").strip()
+    if not re.fullmatch(r"\d+\.\d+\.\d+", version_file):
+        fail("VERSION must use MAJOR.MINOR.PATCH format")
+    expected_version = version_file
+    release_notes_name = f"RELEASE_NOTES_v{expected_version}.md"
+    required = set(REQUIRED_BASE)
+    required.add(release_notes_name)
+
+    readme_text = (ROOT / "README.md").read_text(encoding="utf-8")
+    changelog_text = (ROOT / "CHANGELOG.md").read_text(encoding="utf-8")
+    release_notes_path = ROOT / release_notes_name
+    release_notes_text = release_notes_path.read_text(encoding="utf-8") if release_notes_path.is_file() else ""
+    readme_match = re.search(r"^\*\*Version:\*\*\s*(\d+\.\d+\.\d+)\s*$", readme_text, re.MULTILINE)
+    changelog_match = re.search(r"^## \[(\d+\.\d+\.\d+)\]", changelog_text, re.MULTILINE)
+    release_match = re.search(r"^# Release Notes\s+[—-]\s+v(\d+\.\d+\.\d+)", release_notes_text, re.MULTILINE)
+    declared_versions = {
+        "VERSION": version_file,
+        "README.md": readme_match.group(1) if readme_match else None,
+        "CHANGELOG.md": changelog_match.group(1) if changelog_match else None,
+        release_notes_name: release_match.group(1) if release_match else None,
+    }
+    mismatches = [f"{name}={value!r}" for name, value in declared_versions.items() if value != expected_version]
+    if mismatches:
+        fail("version mismatch or missing version declaration: " + ", ".join(mismatches))
+    missing = sorted(item for item in required if not (ROOT / item).is_file())
     if missing:
         fail(f"missing required files: {', '.join(missing)}")
     forbidden = [p.relative_to(ROOT).as_posix() for p in ROOT.rglob("*") if p.is_dir() and p.name in FORBIDDEN_DIRS]
@@ -70,7 +91,7 @@ def main() -> None:
         fail(f"expected 41 standalone prompts, found {len(standalone_files)}")
     profile_manifest = json.loads((standalone_dir / "PROFILE_MANIFEST.json").read_text(encoding="utf-8"))
     entries = profile_manifest.get("profiles", [])
-    if profile_manifest.get("package_version") != EXPECTED_VERSION or profile_manifest.get("profile_count") != 41 or len(entries) != 41:
+    if profile_manifest.get("package_version") != expected_version or profile_manifest.get("profile_count") != 41 or len(entries) != 41:
         fail("standalone profile manifest is incomplete or has the wrong version")
     de_map, en_map = dict(de_profiles), dict(en_profiles)
     manifest_files = set()
@@ -104,17 +125,47 @@ def main() -> None:
         if "https://" not in (ROOT / filename).read_text(encoding="utf-8"):
             fail(f"no HTTPS references in {filename}")
 
-    # Verify the internal manifest last; manifest deliberately does not hash itself.
-    for line in (ROOT / "RELEASE_MANIFEST.sha256").read_text(encoding="utf-8").splitlines():
-        expected, rel = line.split(maxsplit=1)
-        target = ROOT / rel.strip().removeprefix("*")
+    # Verify the internal manifest last. It must cover every package file except itself.
+    manifest_path = ROOT / "RELEASE_MANIFEST.sha256"
+    manifest_entries: dict[str, str] = {}
+    for line_number, line in enumerate(manifest_path.read_text(encoding="utf-8").splitlines(), start=1):
+        if not line.strip():
+            continue
+        match = re.fullmatch(r"([0-9a-f]{64})  (\S.*)", line)
+        if not match:
+            fail(f"invalid SHA-256 manifest syntax at line {line_number}")
+        expected, rel = match.groups()
+        if "\\" in rel or rel.startswith("/") or re.match(r"^[A-Za-z]:", rel) or ".." in rel.split("/") or rel.startswith("//"):
+            fail(f"unsafe manifest path at line {line_number}: {rel}")
+        parts = Path(rel).parts
+        if not parts or any(part in ("", ".", "..") for part in parts):
+            fail(f"non-canonical manifest path at line {line_number}: {rel}")
+        if rel in manifest_entries:
+            fail(f"duplicate manifest path: {rel}")
+        manifest_entries[rel] = expected
+        target = ROOT / rel
         if not target.is_file():
             fail(f"manifest target missing: {rel}")
         actual = hashlib.sha256(target.read_bytes()).hexdigest()
         if actual != expected:
             fail(f"manifest checksum mismatch: {rel}")
+
+    package_files = {
+        path.relative_to(ROOT).as_posix()
+        for path in ROOT.rglob("*")
+        if path.is_file()
+        and path != manifest_path
+        and ".git" not in path.relative_to(ROOT).parts
+    }
+    manifest_files = set(manifest_entries)
+    missing_from_manifest = sorted(package_files - manifest_files)
+    stale_manifest_entries = sorted(manifest_files - package_files)
+    if missing_from_manifest:
+        fail("package files missing from SHA-256 manifest: " + ", ".join(missing_from_manifest))
+    if stale_manifest_entries:
+        fail("manifest contains non-package paths: " + ", ".join(stale_manifest_entries))
     mode = "Git checkout" if checkout_mode else "release directory"
-    print(f"PASS: {mode} 1.2.2; master profiles=41/41; standalone prompts=41; manifest, parity, forms, and fences verified")
+    print(f"PASS: {mode} {expected_version}; master profiles=41/41; standalone prompts=41; SHA-256 coverage={len(manifest_entries)} files; parity, forms, and fences verified")
 
 
 if __name__ == "__main__":

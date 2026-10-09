@@ -1,0 +1,59 @@
+name: Reference link audit
+
+on:
+  push:
+    branches:
+      - hardening/ci-release-gate
+  pull_request:
+    branches:
+      - main
+      - master
+  workflow_dispatch:
+  schedule:
+    - cron: "23 6 * * 1"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: reference-link-audit-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  audit:
+    name: Audit prompt reference URLs (informational)
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Check out source
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Set up Python
+        uses: actions/setup-python@42375524e23c412d93fb67b49958b491fce71c38 # v5.6.0
+        with:
+          python-version: "3.12"
+
+      - name: Compile auditor and run offline tests
+        env:
+          PYTHONPYCACHEPREFIX: ${{ runner.temp }}/python-cache
+        run: |
+          python -m py_compile scripts/audit_reference_links.py
+          python -m unittest tests.test_reference_link_audit -v
+
+      - name: Check references and save report
+        run: python scripts/audit_reference_links.py --root . --timeout 8 --workers 8 --output "$RUNNER_TEMP/reference-link-audit.json"
+        continue-on-error: true
+
+      - name: Print SHA-256 values for manifest maintenance
+        if: always()
+        run: |
+          sha256sum scripts/audit_reference_links.py tests/test_reference_link_audit.py .github/workflows/reference-link-audit.yml
+
+      - name: Upload audit report
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: reference-link-audit-${{ github.run_id }}
+          path: ${{ runner.temp }}/reference-link-audit.json
+          if-no-files-found: warn
+          retention-days: 14
