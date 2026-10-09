@@ -43,14 +43,22 @@ jobs:
           EXTRACT_DIR: ${{ runner.temp }}/release-extract
         run: |
           set -euo pipefail
-          git archive --format=zip --prefix=ai-deep-review-prompt-pack-v1.2.2/ HEAD -o "$ARCHIVE"
+          VERSION="$(tr -d '\r\n' < VERSION)"
+          if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "FAIL: VERSION must use MAJOR.MINOR.PATCH format"
+            exit 1
+          fi
+          EXPECTED_ROOT="$(printf 'ai-deep-review-prompt-pack-v%s' "$VERSION")"
+          export VERSION EXPECTED_ROOT
+          git archive --format=zip --prefix="$(printf '%s/' "$EXPECTED_ROOT")" HEAD -o "$ARCHIVE"
           python - <<'PY'
           import os
           import stat
           import zipfile
           from pathlib import PurePosixPath
           archive = os.environ["ARCHIVE"]
-          expected_root = "ai-deep-review-prompt-pack-v1.2.2"
+          expected_root = os.environ["EXPECTED_ROOT"]
+          version = os.environ["VERSION"]
           forbidden = {".git", "__pycache__", "node_modules", ".venv", "venv", "dist", "build", ".pytest_cache", ".mypy_cache"}
           with zipfile.ZipFile(archive) as zf:
               bad_member = zf.testzip()
@@ -87,7 +95,7 @@ jobs:
                   expected_root + "/RELEASE_MANIFEST.sha256",
                   expected_root + "/LICENSE",
                   expected_root + "/CHANGELOG.md",
-                  expected_root + "/RELEASE_NOTES_v1.2.2.md",
+                  expected_root + f"/RELEASE_NOTES_v{version}.md",
                   expected_root + "/prompts/standalone/PROFILE_MANIFEST.json",
               }
               if not required.issubset(set(names)):
@@ -96,4 +104,4 @@ jobs:
           PY
           mkdir -p "$EXTRACT_DIR"
           python -c 'import os,sys,zipfile; zipfile.ZipFile(sys.argv[1]).extractall(sys.argv[2])' "$ARCHIVE" "$EXTRACT_DIR"
-          python "$EXTRACT_DIR/ai-deep-review-prompt-pack-v1.2.2/scripts/validate_release.py"
+          python "$EXTRACT_DIR/$EXPECTED_ROOT/scripts/validate_release.py"
