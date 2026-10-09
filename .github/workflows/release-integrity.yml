@@ -51,8 +51,11 @@ jobs:
           from pathlib import PurePosixPath
           archive = os.environ["ARCHIVE"]
           expected_root = "ai-deep-review-prompt-pack-v1.2.2"
-          forbidden = {".git", "__pycache__", "node_modules", ".venv", "venv", "dist", "build"}
+          forbidden = {".git", "__pycache__", "node_modules", ".venv", "venv", "dist", "build", ".pytest_cache", ".mypy_cache"}
           with zipfile.ZipFile(archive) as zf:
+              bad_member = zf.testzip()
+              if bad_member is not None:
+                  raise SystemExit(f"FAIL: ZIP CRC error in {bad_member}")
               infos = zf.infolist()
               names = [item.filename for item in infos]
               if not names or len(names) != len(set(names)):
@@ -68,8 +71,12 @@ jobs:
                   if not path.parts:
                       raise SystemExit("FAIL: empty archive path")
                   roots.add(path.parts[0])
-                  if any(part in forbidden for part in path.parts):
+                  if path.parts[0] != expected_root:
+                      raise SystemExit(f"FAIL: entry outside expected root: {name}")
+                  if any(part.lower() in forbidden for part in path.parts):
                       raise SystemExit(f"FAIL: forbidden path component: {name}")
+                  if len(path.parts) > 1 and ":" in path.parts[1]:
+                      raise SystemExit(f"FAIL: drive-like path: {name}")
                   if stat.S_ISLNK(item.external_attr >> 16):
                       raise SystemExit(f"FAIL: symlink in ZIP: {name}")
               if roots != {expected_root}:
@@ -78,6 +85,10 @@ jobs:
                   expected_root + "/README.md",
                   expected_root + "/scripts/validate_release.py",
                   expected_root + "/RELEASE_MANIFEST.sha256",
+                  expected_root + "/LICENSE",
+                  expected_root + "/CHANGELOG.md",
+                  expected_root + "/RELEASE_NOTES_v1.2.2.md",
+                  expected_root + "/prompts/standalone/PROFILE_MANIFEST.json",
               }
               if not required.issubset(set(names)):
                   raise SystemExit("FAIL: required release files missing from ZIP")
