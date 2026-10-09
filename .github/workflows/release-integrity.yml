@@ -29,6 +29,8 @@ jobs:
           python-version: "3.12"
 
       - name: Compile validator
+        env:
+          PYTHONPYCACHEPREFIX: ${{ runner.temp }}/python-cache
         run: python -m py_compile scripts/validate_release.py
 
       - name: Validate required files, profile parity, forms, and checksums
