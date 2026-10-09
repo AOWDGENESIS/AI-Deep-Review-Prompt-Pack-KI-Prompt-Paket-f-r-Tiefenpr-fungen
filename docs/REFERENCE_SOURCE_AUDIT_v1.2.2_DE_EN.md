@@ -1,8 +1,8 @@
 # Reference Source Audit / Referenzquellen-Audit
 
-**Review date / Prüfdatum:** 2026-10-09  
-**Repository version / Version:** 1.2.2  
-**Branch under review / Prüfbranch:** `hardening/ci-release-gate`  
+**Review date / Prüfdatum:** 2026-10-09
+**Repository version / Version:** 1.2.2
+**Branch under review / Prüfbranch:** `hardening/ci-release-gate`
 **Scope / Umfang:** Sampled review of the 93 unique URLs extracted from the German and English master prompts and the standalone profile manifest. This is not a complete HTTP status audit of every link.
 
 ## Findings
