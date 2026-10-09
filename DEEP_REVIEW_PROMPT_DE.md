@@ -575,7 +575,7 @@ ZUSATZPRÜFUNG ANSIBLE
 - Prüfe shell/command/argv, Jinja-Injection, become, remote_user, Dateirechte, Secrets/Vault und Inventory-Quellen.
 - Prüfe Collections-/Rollenherkunft und -Versionen, faktische Hostbegrenzung, Serialisierung und gefährliche Delegation.
 REFERENZEN: Ansible Best Practices https://docs.ansible.com/projects/ansible/latest/tips_tricks/ansible_tips_tricks.html ;
-Ansible Security https://docs.ansible.com/ansible/latest/vault_guide/ ; OWASP https://cheatsheetseries.owasp.org/
+Ansible Security https://docs.ansible.com/projects/ansible/latest/vault_guide/index.html ; OWASP https://cheatsheetseries.owasp.org/
 ```
 
 ## PROFILE: Andere Sprache / Discovery
