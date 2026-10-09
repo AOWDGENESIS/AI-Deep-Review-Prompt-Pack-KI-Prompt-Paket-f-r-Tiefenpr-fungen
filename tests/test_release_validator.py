@@ -1,6 +1,7 @@
 """Regression tests for release-manifest validation."""
 from __future__ import annotations
 
+import hashlib
 import json
 import re
 import shutil
@@ -43,6 +44,14 @@ class ReleaseValidatorRegressionTests(unittest.TestCase):
         result = self.run_validator()
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
         self.assertIn("SHA-256 coverage=", result.stdout)
+
+
+    def test_manifest_checksum_for_test_file_matches(self) -> None:
+        manifest = (self.root / MANIFEST).read_text(encoding="utf-8").splitlines()
+        entry = next(line for line in manifest if line.endswith("  tests/test_release_validator.py"))
+        expected = entry.split("  ", 1)[0]
+        actual = hashlib.sha256((self.root / "tests/test_release_validator.py").read_bytes()).hexdigest()
+        self.assertEqual(expected, actual, f"Manifest hash mismatch; actual SHA-256 is {actual}")
 
     def test_missing_manifest_entry_fails(self) -> None:
         path = self.root / MANIFEST
