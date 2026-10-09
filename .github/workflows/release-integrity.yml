@@ -16,7 +16,7 @@ concurrency:
 
 jobs:
   validate:
-    name: Validate repository integrity
+    name: Validate repository and release archive
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -33,5 +33,52 @@ jobs:
           PYTHONPYCACHEPREFIX: ${{ runner.temp }}/python-cache
         run: python -m py_compile scripts/validate_release.py
 
-      - name: Validate required files, profile parity, forms, and checksums
+      - name: Validate repository files, profile parity, forms, and checksums
         run: python scripts/validate_release.py
+
+      - name: Build isolated staging ZIP from tracked files
+        shell: bash
+        run: |
+          set -euo pipefail
+          git archive --format=zip --prefix=ai-deep-review-prompt-pack-v1.2.2/ HEAD -o "$RUNNER_TEMP/release.zip"
+          python - <<'PY'
+          import stat
+          import zipfile
+          from pathlib import PurePosixPath
+          archive = "$RUNNER_TEMP/release.zip"
+          expected_root = "ai-deep-review-prompt-pack-v1.2.2"
+          forbidden = {".git", "__pycache__", "node_modules", ".venv", "venv", "dist", "build"}
+          with zipfile.ZipFile(archive) as zf:
+              infos = zf.infolist()
+              names = [item.filename for item in infos]
+              if not names or len(names) != len(set(names)):
+                  raise SystemExit("FAIL: ZIP is empty or contains duplicate entries")
+              roots = set()
+              for item in infos:
+                  name = item.filename
+                  if "\\" in name:
+                      raise SystemExit(f"FAIL: backslash path: {name}")
+                  path = PurePosixPath(name)
+                  if path.is_absolute() or ".." in path.parts:
+                      raise SystemExit(f"FAIL: unsafe path: {name}")
+                  if not path.parts:
+                      raise SystemExit("FAIL: empty archive path")
+                  roots.add(path.parts[0])
+                  if any(part in forbidden for part in path.parts):
+                      raise SystemExit(f"FAIL: forbidden path component: {name}")
+                  if stat.S_ISLNK(item.external_attr >> 16):
+                      raise SystemExit(f"FAIL: symlink in ZIP: {name}")
+              if roots != {expected_root}:
+                  raise SystemExit(f"FAIL: unexpected top-level roots: {sorted(roots)}")
+              required = {
+                  expected_root + "/README.md",
+                  expected_root + "/scripts/validate_release.py",
+                  expected_root + "/RELEASE_MANIFEST.sha256",
+              }
+              if not required.issubset(set(names)):
+                  raise SystemExit("FAIL: required release files missing from ZIP")
+              print(f"PASS: ZIP isolation; one root, {len(infos)} entries, no .git/cache/build paths")
+          PY
+          mkdir -p "$RUNNER_TEMP/release-extract"
+          python -c 'import sys,zipfile; zipfile.ZipFile(sys.argv[1]).extractall(sys.argv[2])' "$RUNNER_TEMP/release.zip" "$RUNNER_TEMP/release-extract"
+          python "$RUNNER_TEMP/release-extract/ai-deep-review-prompt-pack-v1.2.2/scripts/validate_release.py"
