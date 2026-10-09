@@ -1,6 +1,8 @@
 """Regression tests for release-manifest validation."""
 from __future__ import annotations
 
+import json
+import re
 import shutil
 import subprocess
 import sys
@@ -11,6 +13,7 @@ from pathlib import Path
 SOURCE_ROOT = Path(__file__).resolve().parents[1]
 VALIDATOR = Path("scripts/validate_release.py")
 MANIFEST = Path("RELEASE_MANIFEST.sha256")
+PROFILE_MANIFEST = Path("prompts/standalone/PROFILE_MANIFEST.json")
 
 
 class ReleaseValidatorRegressionTests(unittest.TestCase):
@@ -85,6 +88,40 @@ class ReleaseValidatorRegressionTests(unittest.TestCase):
         result = self.run_validator()
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("package files missing from SHA-256 manifest: unexpected.txt", result.stdout)
+
+
+    def test_profile_manifest_matches_standalone_files(self) -> None:
+        data = json.loads((self.root / PROFILE_MANIFEST).read_text(encoding="utf-8"))
+        profiles = data["profiles"]
+        self.assertEqual(data["profile_count"], 41)
+        self.assertEqual(len(profiles), data["profile_count"])
+        self.assertEqual(len({profile["id"] for profile in profiles}), len(profiles))
+        self.assertEqual([p["order"] for p in profiles], list(range(1, len(profiles) + 1)))
+        for profile in profiles:
+            target = self.root / "prompts" / "standalone" / profile["file"]
+            self.assertTrue(target.is_file(), f"Missing profile file: {profile['file']}")
+            text = target.read_text(encoding="utf-8")
+            self.assertIn("## Deutscher Standalone-Prompt", text, profile["file"])
+            self.assertIn("## English Standalone Prompt", text, profile["file"])
+
+    def test_standalone_profiles_have_balanced_code_fences(self) -> None:
+        data = json.loads((self.root / PROFILE_MANIFEST).read_text(encoding="utf-8"))
+        for profile in data["profiles"]:
+            target = self.root / "prompts" / "standalone" / profile["file"]
+            text = target.read_text(encoding="utf-8")
+            fences = [line for line in text.splitlines() if line.lstrip().startswith("```")]
+            self.assertEqual(len(fences) % 2, 0, f"Unbalanced code fences: {profile['file']}")
+
+    def test_standalone_reference_urls_are_https_and_not_placeholders(self) -> None:
+        data = json.loads((self.root / PROFILE_MANIFEST).read_text(encoding="utf-8"))
+        url_pattern = re.compile(r"https?://[^\\s)\\]>\\\"']+")
+        for profile in data["profiles"]:
+            target = self.root / "prompts" / "standalone" / profile["file"]
+            text = target.read_text(encoding="utf-8")
+            for url in url_pattern.findall(text):
+                url = url.rstrip(".,;:")
+                self.assertTrue(url.startswith("https://"), f"Non-HTTPS URL in {profile['file']}: {url}")
+                self.assertNotRegex(url, r"(?i)(example\\.com|localhost|127\\.0\\.0\\.1|TODO|CHANGEME)")
 
 
 if __name__ == "__main__":
