@@ -40,8 +40,25 @@ def main() -> None:
     # The validator must work both in the isolated release directory and in a Git checkout.
     # ZIP isolation (one expected top-level directory and no .git) is checked by the packaging procedure.
     checkout_mode = (ROOT / ".git").exists()
-    if (ROOT / "VERSION").read_text(encoding="utf-8").strip() != EXPECTED_VERSION:
+    version_file = (ROOT / "VERSION").read_text(encoding="utf-8").strip()
+    if version_file != EXPECTED_VERSION:
         fail("VERSION does not match expected version")
+
+    readme_text = (ROOT / "README.md").read_text(encoding="utf-8")
+    changelog_text = (ROOT / "CHANGELOG.md").read_text(encoding="utf-8")
+    release_notes_text = (ROOT / "RELEASE_NOTES_v1.2.2.md").read_text(encoding="utf-8")
+    readme_match = re.search(r"^\*\*Version:\*\*\s*(\d+\.\d+\.\d+)\s*$", readme_text, re.MULTILINE)
+    changelog_match = re.search(r"^## \[(\d+\.\d+\.\d+)\]", changelog_text, re.MULTILINE)
+    release_match = re.search(r"^# Release Notes\s+[—-]\s+v(\d+\.\d+\.\d+)", release_notes_text, re.MULTILINE)
+    declared_versions = {
+        "VERSION": version_file,
+        "README.md": readme_match.group(1) if readme_match else None,
+        "CHANGELOG.md": changelog_match.group(1) if changelog_match else None,
+        "RELEASE_NOTES_v1.2.2.md": release_match.group(1) if release_match else None,
+    }
+    mismatches = [f"{name}={value!r}" for name, value in declared_versions.items() if value != EXPECTED_VERSION]
+    if mismatches:
+        fail("version mismatch or missing version declaration: " + ", ".join(mismatches))
     missing = sorted(item for item in REQUIRED if not (ROOT / item).is_file())
     if missing:
         fail(f"missing required files: {', '.join(missing)}")
