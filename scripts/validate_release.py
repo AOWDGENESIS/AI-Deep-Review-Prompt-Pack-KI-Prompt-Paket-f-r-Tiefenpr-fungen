@@ -125,17 +125,47 @@ def main() -> None:
         if "https://" not in (ROOT / filename).read_text(encoding="utf-8"):
             fail(f"no HTTPS references in {filename}")
 
-    # Verify the internal manifest last; manifest deliberately does not hash itself.
-    for line in (ROOT / "RELEASE_MANIFEST.sha256").read_text(encoding="utf-8").splitlines():
-        expected, rel = line.split(maxsplit=1)
-        target = ROOT / rel.strip().removeprefix("*")
+    # Verify the internal manifest last. It must cover every package file except itself.
+    manifest_path = ROOT / "RELEASE_MANIFEST.sha256"
+    manifest_entries: dict[str, str] = {}
+    for line_number, line in enumerate(manifest_path.read_text(encoding="utf-8").splitlines(), start=1):
+        if not line.strip():
+            continue
+        match = re.fullmatch(r"([0-9a-f]{64})  ([^\\s].*)", line)
+        if not match:
+            fail(f"invalid SHA-256 manifest syntax at line {line_number}")
+        expected, rel = match.groups()
+        if "\\\\" in rel or rel.startswith("/") or re.match(r"^[A-Za-z]:", rel):
+            fail(f"unsafe manifest path at line {line_number}: {rel}")
+        parts = Path(rel).parts
+        if not parts or any(part in ("", ".", "..") for part in parts):
+            fail(f"non-canonical manifest path at line {line_number}: {rel}")
+        if rel in manifest_entries:
+            fail(f"duplicate manifest path: {rel}")
+        manifest_entries[rel] = expected
+        target = ROOT / rel
         if not target.is_file():
             fail(f"manifest target missing: {rel}")
         actual = hashlib.sha256(target.read_bytes()).hexdigest()
         if actual != expected:
             fail(f"manifest checksum mismatch: {rel}")
+
+    package_files = {
+        path.relative_to(ROOT).as_posix()
+        for path in ROOT.rglob("*")
+        if path.is_file()
+        and path != manifest_path
+        and ".git" not in path.relative_to(ROOT).parts
+    }
+    manifest_files = set(manifest_entries)
+    missing_from_manifest = sorted(package_files - manifest_files)
+    stale_manifest_entries = sorted(manifest_files - package_files)
+    if missing_from_manifest:
+        fail("package files missing from SHA-256 manifest: " + ", ".join(missing_from_manifest))
+    if stale_manifest_entries:
+        fail("manifest contains non-package paths: " + ", ".join(stale_manifest_entries))
     mode = "Git checkout" if checkout_mode else "release directory"
-    print(f"PASS: {mode} {expected_version}; master profiles=41/41; standalone prompts=41; manifest, parity, forms, and fences verified")
+    print(f"PASS: {mode} {expected_version}; master profiles=41/41; standalone prompts=41; SHA-256 coverage={len(manifest_entries)} files; parity, forms, and fences verified")
 
 
 if __name__ == "__main__":
