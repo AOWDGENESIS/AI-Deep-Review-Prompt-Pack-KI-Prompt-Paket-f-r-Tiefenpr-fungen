@@ -36,16 +36,20 @@ jobs:
       - name: Validate repository files, profile parity, forms, and checksums
         run: python scripts/validate_release.py
 
-      - name: Build isolated staging ZIP from tracked files
+      - name: Build and validate isolated staging ZIP
         shell: bash
+        env:
+          ARCHIVE: ${{ runner.temp }}/release.zip
+          EXTRACT_DIR: ${{ runner.temp }}/release-extract
         run: |
           set -euo pipefail
-          git archive --format=zip --prefix=ai-deep-review-prompt-pack-v1.2.2/ HEAD -o "$RUNNER_TEMP/release.zip"
+          git archive --format=zip --prefix=ai-deep-review-prompt-pack-v1.2.2/ HEAD -o "$ARCHIVE"
           python - <<'PY'
+          import os
           import stat
           import zipfile
           from pathlib import PurePosixPath
-          archive = "$RUNNER_TEMP/release.zip"
+          archive = os.environ["ARCHIVE"]
           expected_root = "ai-deep-review-prompt-pack-v1.2.2"
           forbidden = {".git", "__pycache__", "node_modules", ".venv", "venv", "dist", "build"}
           with zipfile.ZipFile(archive) as zf:
@@ -79,6 +83,6 @@ jobs:
                   raise SystemExit("FAIL: required release files missing from ZIP")
               print(f"PASS: ZIP isolation; one root, {len(infos)} entries, no .git/cache/build paths")
           PY
-          mkdir -p "$RUNNER_TEMP/release-extract"
-          python -c 'import sys,zipfile; zipfile.ZipFile(sys.argv[1]).extractall(sys.argv[2])' "$RUNNER_TEMP/release.zip" "$RUNNER_TEMP/release-extract"
-          python "$RUNNER_TEMP/release-extract/ai-deep-review-prompt-pack-v1.2.2/scripts/validate_release.py"
+          mkdir -p "$EXTRACT_DIR"
+          python -c 'import os,sys,zipfile; zipfile.ZipFile(sys.argv[1]).extractall(sys.argv[2])' "$ARCHIVE" "$EXTRACT_DIR"
+          python "$EXTRACT_DIR/ai-deep-review-prompt-pack-v1.2.2/scripts/validate_release.py"
