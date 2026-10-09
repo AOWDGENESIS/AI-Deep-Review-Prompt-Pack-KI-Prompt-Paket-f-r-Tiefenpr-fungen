@@ -1,6 +1,13 @@
 name: Reference link audit
 
 on:
+  push:
+    branches:
+      - hardening/ci-release-gate
+  pull_request:
+    branches:
+      - main
+      - master
   workflow_dispatch:
   schedule:
     - cron: "23 6 * * 1"
