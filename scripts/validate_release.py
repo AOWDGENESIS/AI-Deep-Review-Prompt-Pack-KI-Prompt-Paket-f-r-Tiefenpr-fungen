@@ -131,7 +131,7 @@ def main() -> None:
     for line_number, line in enumerate(manifest_path.read_text(encoding="utf-8").splitlines(), start=1):
         if not line.strip():
             continue
-        match = re.fullmatch(r"([0-9a-f]{64})  ([^\\s].*)", line)
+        match = re.fullmatch(r"([0-9a-f]{64})  (\S.*)", line)
         if not match:
             fail(f"invalid SHA-256 manifest syntax at line {line_number}")
         expected, rel = match.groups()
