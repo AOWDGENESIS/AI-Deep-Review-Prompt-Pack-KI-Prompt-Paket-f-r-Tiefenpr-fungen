@@ -33,6 +33,9 @@ jobs:
           PYTHONPYCACHEPREFIX: ${{ runner.temp }}/python-cache
         run: python -m py_compile scripts/validate_release.py
 
+      - name: Test manifest validator failure modes
+        run: python -m unittest discover -s tests -v
+
       - name: Validate repository files, profile parity, forms, and checksums
         run: python scripts/validate_release.py
 
