@@ -135,7 +135,7 @@ def main() -> None:
         if not match:
             fail(f"invalid SHA-256 manifest syntax at line {line_number}")
         expected, rel = match.groups()
-        if "\\\\" in rel or rel.startswith("/") or re.match(r"^[A-Za-z]:", rel):
+        if "\\" in rel or rel.startswith("/") or re.match(r"^[A-Za-z]:", rel):
             fail(f"unsafe manifest path at line {line_number}: {rel}")
         parts = Path(rel).parts
         if not parts or any(part in ("", ".", "..") for part in parts):
